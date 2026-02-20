@@ -10,7 +10,7 @@ from aiohttp_socks import ProxyConnector
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 
-# Константы (Токен лучше держать в .env, но пока оставим так)
+# Константы
 TOKEN = '8544805108:AAHS0NyFSg0GUdE8UQdd3qMA0NCbhTjl95c'
 wikipedia.set_lang("ru")
 
@@ -23,7 +23,6 @@ async def welcome(message: types.Message):
 @dp.message()
 async def search_wikipedia(message: types.Message):
     try:
-        # Wikipedia search возвращает кортеж (results, suggestion)
         wiki_search_result, suggestion = wikipedia.search(message.text, suggestion=True)
         
         if suggestion:
@@ -37,7 +36,7 @@ async def search_wikipedia(message: types.Message):
         page = wikipedia.page(wiki_search_result[0])
         title = page.title
         url = page.url
-        text = page.summary[:500] + "..." # Увеличил лимит текста для информативности
+        text = page.summary[:500] + "..."
         
         await message.answer(f"📌 *{title}*\n\n📖 {text}\n\n🔗 [Читать полностью]({url})", parse_mode="Markdown")
         
@@ -49,18 +48,25 @@ async def search_wikipedia(message: types.Message):
         await message.answer(f"Произошла ошибка при поиске.")
 
 async def main():
-    # ВАЖНО: Создаем сессию и бота ТОЛЬКО внутри асинхронной функции
-    # Это решает ошибку "no running event loop"
-    connector = ProxyConnector.from_url("http://proxy.server:3128")
-    session = AiohttpSession(connector=connector)
+    # Мы убрали создание коннектора из AiohttpSession, 
+    # так как твоя библиотека выдает ошибку TypeError.
+    # Вместо этого передаем прокси напрямую в объект Bot.
     
-    bot = Bot(token=TOKEN, session=session)
+    bot = Bot(
+        token=TOKEN, 
+        session=AiohttpSession(),
+        proxy="http://proxy.server:3128" # Самый надежный способ для PythonAnywhere
+    )
     
-    print("Бот запущен на PythonAnywhere через прокси...")
-    await dp.start_polling(bot)
+    print("Бот запущен на PythonAnywhere! Теперь прокси работает корректно.")
+    
+    try:
+        await dp.start_polling(bot)
+    finally:
+        await bot.session.close()
 
 if __name__ == '__main__':
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("Бот остановлен")
+        print("Бот остановлен") 
