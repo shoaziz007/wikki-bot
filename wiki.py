@@ -4,15 +4,17 @@ import wikipedia
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.client.session.aiohttp import AiohttpSession
-
+from aiohttp import ClientProxyConnectionError
+from aiohttp_socks import ProxyConnector
 
 logging.basicConfig(level=logging.INFO)
-
+connector = ProxyConnector.from_url("http://proxy.server:3128")
+session = AiohttpSession(proxy="http://proxy.server:3128")
 TOKEN = '8544805108:AAHS0NyFSg0GUdE8UQdd3qMA0NCbhTjl95c'
 
-bot = Bot(token=TOKEN)
+bot = Bot(token=TOKEN, session=session)
 dp = Dispatcher()
-session = AiohttpSession(proxy="http://proxy.server:3128")
+
 wikipedia.set_lang("ru")
 skip_updates=True
 suggestion=True
